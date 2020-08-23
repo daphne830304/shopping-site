@@ -37,15 +37,15 @@ class Melon(object):
 
         return "<Melon: {}, {}, {}>".format(self.melon_id, self.common_name, self.price_str())
 
-
+melon_types = {}
 def read_melon_types_from_file(filepath):
     """Read melon type data and populate dictionary of melon types.
 
     Dictionary will be {id: Melon object}
     """
-
-    melon_types = {}
-
+    # global melon_types
+    # melon_types = {}
+    
     with open(filepath) as file:
         for line in file:
             (melon_id,

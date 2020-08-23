@@ -6,10 +6,11 @@ put melons in a shopping cart.
 Authors: Joel Burton, Christian Fernandez, Meggie Mahnken, Katie Byers.
 """
 
-from flask import Flask, render_template, redirect, flash
+from flask import Flask, render_template, redirect, flash, request,session
 import jinja2
 
 import melons
+import customers
 
 app = Flask(__name__)
 
@@ -49,9 +50,10 @@ def show_melon(melon_id):
 
     Show all info about a melon. Also, provide a button to buy that melon.
     """
-
-    melon = melons.get_by_id("meli")
-    print(melon)
+    # print("#"*50)
+    # print(melon_id)
+    melon = melons.get_by_id(melon_id)
+    
     return render_template("melon_details.html",
                            display_melon=melon)
 
@@ -78,8 +80,29 @@ def show_shopping_cart():
     # Make sure your function can also handle the case wherein no cart has
     # been added to the session
 
-    return render_template("cart.html")
+    # print(session['cart'])
 
+    melon_list = []
+   
+    
+    order_total = 0
+    if session:
+        for i, quantity in session['cart'].items():
+            melon = melons.get_by_id(i)
+            
+            total_cost_per_melon = melon.price * quantity
+            melon.quantity = quantity #add attributes to instance
+            melon.total_cost = total_cost_per_melon #add attributes to instance
+            order_total += total_cost_per_melon
+
+            melon_list.append(melon)
+ 
+        return render_template("cart.html",
+                            order_total=order_total,
+                            melon_list=melon_list)
+    else:
+        flash("Your cart is empty")
+        return redirect("/melons")
 
 @app.route("/add_to_cart/<melon_id>")
 def add_to_cart(melon_id):
@@ -88,7 +111,7 @@ def add_to_cart(melon_id):
     When a melon is added to the cart, redirect browser to the shopping cart
     page and display a confirmation message: 'Melon successfully added to
     cart'."""
-
+    
     # TODO: Finish shopping cart functionality
 
     # The logic here should be something like:
@@ -100,7 +123,27 @@ def add_to_cart(melon_id):
     # - flash a success message
     # - redirect the user to the cart page
 
-    return "Oops! This needs to be implemented!"
+    if 'cart' not in session:
+        session['cart'] = {}
+    cart = session['cart']
+
+    cart[melon_id] = cart.get(melon_id,0) + 1
+
+    # if 'cart' in session:
+    #     cart = session['cart']
+    # else:
+    #     cart = session['cart']
+    #     session['cart']= {}
+
+    # cart[melon_id] = cart.get(melon_id,0) + 1
+    # print('#'*50)
+    # print(session['cart'])
+
+    flash("Melon added to cart.") #why do we need this?
+    # cart[melon_id] = cart.get(melon_id,0) + 1
+    return redirect("/cart")
+
+    # return "Oops! This needs to be implemented!"
 
 
 @app.route("/login", methods=["GET"])
@@ -131,6 +174,29 @@ def process_login():
     #   message and redirect the user to the "/melons" route
     # - if they don't, flash a failure message and redirect back to "/login"
     # - do the same if a Customer with that email doesn't exist
+
+    name = request.form['email']
+    password = request.form['password']
+
+    if name not in customers.customers:
+        flash('emailed not matched in database')
+        return redirect('login')
+    else:
+        customer = customers.get_by_email(name)
+
+    if password == customer.password:
+        session['password'] = password
+        flash('sucess')
+        return redirect('/melons')
+    else:
+        flash('incorrect password')
+        return redirect('/login')
+
+    # if name != customer.email:
+    #     flash('emailed not matched in database')
+    #     return redirect('login')
+
+   
 
     return "Oops! This needs to be implemented"
 
